@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小舞子SUMMER 2025 - 夏のBBQイベント</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', 'Noto Sans JP', sans-serif; background-color: #f0f2f5; }
+        .page { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; text-align: center; }
+        #page1 { background: linear-gradient(-45deg, #f09433, #e6683c, #dc2743, #bc1888); background-size: 400% 400%; animation: gradientBG 15s ease infinite; color: white; }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        #countdown .time-box { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 1rem; padding: 1rem 1.5rem; min-width: 90px; }
+        .card { background: white; border-radius: 1.5rem; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); padding: 2.5rem; transition: transform 0.3s ease; }
+        .card:hover { transform: translateY(-10px); }
+        .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .gallery-item { position: relative; width: 100%; padding-top: 100%; background-color: #e2e8f0; border-radius: 1rem; overflow: hidden; cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .gallery-item:hover { transform: scale(1.05); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .gallery-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        .upload-btn { background: linear-gradient(45deg, #5f72be, #9921e8); transition: all 0.3s ease; }
+        .upload-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(153, 33, 232, 0.4); }
+        #imageModal { transition: opacity 0.3s ease; }
+        #modalImage { transition: transform 0.3s ease; transform: scale(0.9); }
+        #imageModal.visible #modalImage { transform: scale(1); }
+    </style>
+</head>
+<body>
+    <main>
+        <!-- Page 1: Title & Countdown -->
+        <section id="page1" class="page">
+            <h1 class="text-6xl md:text-9xl font-black tracking-tighter">小舞子SUMMER</h1>
+            <p class="mt-4 text-xl md:text-3xl font-bold">2025</p>
+            <p class="mt-8 text-lg md:text-2xl max-w-2xl">この夏、最高の瞬間を、共に。</p>
+            <div id="countdown" class="flex flex-wrap justify-center gap-4 md:gap-8 mt-12">
+                <div class="time-box"><span id="days" class="text-4xl md:text-5xl font-bold">00</span><span class="text-sm md:text-base">Days</span></div>
+                <div class="time-box"><span id="hours" class="text-4xl md:text-5xl font-bold">00</span><span class="text-sm md:text-base">Hours</span></div>
+                <div class="time-box"><span id="minutes" class="text-4xl md:text-5xl font-bold">00</span><span class="text-sm md:text-base">Minutes</span></div>
+                <div class="time-box"><span id="seconds" class="text-4xl md:text-5xl font-bold">00</span><span class="text-sm md:text-base">Seconds</span></div>
+            </div>
+            <a href="#page2" class="absolute bottom-10 animate-bounce"><svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></a>
+        </section>
+
+        <!-- Page 2: Details -->
+        <section id="page2" class="page bg-slate-50">
+            <h2 class="text-4xl md:text-6xl font-black text-slate-800 mb-12">EVENT DETAILS</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl">
+                <div class="card"><i data-feather="calendar" class="w-16 h-16 mx-auto text-sky-500 mb-6"></i><h3 class="text-2xl font-bold">日時</h3><p class="text-slate-600 mt-4 text-xl">2025年7月20日(日)</p><p class="text-slate-600 text-xl">11:00 AM START</p></div>
+                <div class="card"><i data-feather="map-pin" class="w-16 h-16 mx-auto text-emerald-500 mb-6"></i><h3 class="text-2xl font-bold">場所</h3><p class="text-slate-600 mt-4 text-xl">小舞子海岸</p><p class="text-slate-500 text-base">(詳細は後日連絡します)</p></div>
+                <div class="card"><i data-feather="tag" class="w-16 h-16 mx-auto text-amber-500 mb-6"></i><h3 class="text-2xl font-bold">会費</h3><p class="text-slate-600 mt-4 text-xl">¥4,000 ~ ¥5,000</p><p class="text-slate-500 text-base">(参加人数により変動)</p></div>
+            </div>
+            <a href="#page3" class="mt-20 text-slate-500 hover:text-slate-800 transition"><span class="mr-2">フォトギャラリーへ</span><i data-feather="arrow-down" class="inline-block animate-bounce"></i></a>
+        </section>
+
+        <!-- Page 3: Gallery -->
+        <section id="page3" class="page bg-white">
+            <h2 class="text-4xl md:text-6xl font-black text-slate-800 mb-4">OUR MEMORIES</h2>
+            <p class="max-w-xl mx-auto text-slate-600 mb-10">イベントで撮った最高の写真をアップロード！みんなで夏の思い出を共有しよう。</p>
+            <div class="mb-10">
+                <label for="imageUpload" class="inline-block text-white font-bold py-4 px-10 rounded-full cursor-pointer upload-btn"><i data-feather="camera" class="inline-block -mt-1 mr-2"></i><span>写真を投稿する</span></label>
+                <input type="file" id="imageUpload" class="hidden" accept="image/*" multiple>
+            </div>
+            <div id="uploadStatus" class="mb-8 text-slate-500 h-5"></div>
+            <div id="imageGallery" class="gallery-grid max-w-5xl w-full"></div>
+            <a href="#page1" class="mt-20 text-slate-500 hover:text-slate-800 transition"><i data-feather="arrow-up" class="inline-block"></i><span class="ml-2">トップへ戻る</span></a>
+        </section>
+    </main>
+
+    <!-- Modal for Image Viewing -->
+    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
+        <span id="closeModal" class="absolute top-4 right-6 text-white text-5xl font-bold cursor-pointer hover:text-gray-300 transition">&times;</span>
+        <img id="modalImage" class="max-w-full max-h-full object-contain" src="" alt="Modal Image View">
+    </div>
+
+    <script>
+        // --- Countdown Timer ---
+        const countdown = () => {
+            const eventDate = new Date('2025-07-20T11:00:00').getTime();
+            const now = new Date().getTime();
+            const difference = eventDate - now;
+            if (difference < 0) {
+                document.getElementById('countdown').innerHTML = '<div class="text-3xl font-bold">イベントは開始しました！</div>';
+                clearInterval(interval); return;
+            }
+            const d = Math.floor(difference / (1000 * 60 * 60 * 24));
+            const h = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((difference % (1000 * 60)) / 1000);
+            document.getElementById('days').innerText = d.toString().padStart(2, '0');
+            document.getElementById('hours').innerText = h.toString().padStart(2, '0');
+            document.getElementById('minutes').innerText = m.toString().padStart(2, '0');
+            document.getElementById('seconds').innerText = s.toString().padStart(2, '0');
+        };
+        const interval = setInterval(countdown, 1000);
+        countdown();
+
+        // --- Gallery & Upload Logic ---
+        const imageUploadInput = document.getElementById('imageUpload');
+        const imageGallery = document.getElementById('imageGallery');
+        const uploadStatus = document.getElementById('uploadStatus');
+
+        // Function to fetch images from our backend and display them
+        const fetchAndDisplayImages = async () => {
+            try {
+                const response = await fetch('/.netlify/functions/images');
+                if (!response.ok) throw new Error('Failed to fetch images.');
+                const images = await response.json();
+                
+                imageGallery.innerHTML = ''; // Clear gallery
+                images.forEach(img => {
+                    const div = document.createElement('div');
+                    div.className = "gallery-item";
+                    const imgElement = document.createElement('img');
+                    imgElement.src = img.thumbnailLink; // Use thumbnail for grid
+                    imgElement.dataset.fullSrc = `https://drive.google.com/uc?export=view&id=${img.id}`; // Store full res link
+                    imgElement.alt = img.name;
+                    div.appendChild(imgElement);
+                    imageGallery.prepend(div);
+                });
+            } catch (error) {
+                console.error('Error fetching images:', error);
+                uploadStatus.textContent = '画像の読み込みに失敗しました。';
+            }
+        };
+
+        // Listen for file selection
+        imageUploadInput.addEventListener('change', async (event) => {
+            const files = event.target.files;
+            if (!files.length) return;
+
+            uploadStatus.textContent = 'アップロード中...';
+            const formData = new FormData();
+            for (const file of files) {
+                formData.append('images', file);
+            }
+
+            try {
+                const response = await fetch('/.netlify/functions/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+                if (!response.ok) {
+                   const errorData = await response.json();
+                   throw new Error(errorData.message || 'Upload failed');
+                }
+                uploadStatus.textContent = 'アップロードが完了しました！';
+                await fetchAndDisplayImages(); // Refresh gallery
+            } catch (error) {
+                console.error('Upload Error:', error);
+                uploadStatus.textContent = `エラー: ${error.message}`;
+            } finally {
+                setTimeout(() => uploadStatus.textContent = '', 4000);
+            }
+            imageUploadInput.value = '';
+        });
+
+        // Initial load of images when the page is ready
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayImages);
+
+
+        // --- Modal Logic ---
+        const imageModal = document.getElementById('imageModal');
+        const modalImage = document.getElementById('modalImage');
+        const openModal = (src) => {
+            modalImage.src = src;
+            imageModal.classList.remove('opacity-0', 'pointer-events-none');
+            imageModal.classList.add('visible');
+            document.body.style.overflow = 'hidden';
+        };
+        const closeModal = () => {
+            imageModal.classList.add('opacity-0', 'pointer-events-none');
+            imageModal.classList.remove('visible');
+            document.body.style.overflow = '';
+        };
+        imageGallery.addEventListener('click', (e) => {
+            if (e.target.tagName === 'IMG' && e.target.dataset.fullSrc) {
+                openModal(e.target.dataset.fullSrc);
+            }
+        });
+        document.getElementById('closeModal').addEventListener('click', closeModal);
+        imageModal.addEventListener('click', (e) => { if (e.target === imageModal) closeModal(); });
+
+        feather.replace();
+    </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "komai-ko-summer-site",
+  "version": "1.0.0",
+  "dependencies": {
+    "google-auth-library": "^9.0.0",
+    "googleapis": "^128.0.0",
+    "busboy": "^1.6.0"
+  }
+}
