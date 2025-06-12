@@ -4,17 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>小舞子SUMMER 2025 - 夏のBBQイベント</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/feather-icons"></script>
+
     <style>
         html { scroll-behavior: smooth; }
         body { font-family: 'Inter', 'Noto Sans JP', sans-serif; background-color: #f0f2f5; }
-        .page { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; text-align: center; }
-        #page1 { background: linear-gradient(-45deg, #f09433, #e6683c, #dc2743, #bc1888); background-size: 400% 400%; animation: gradientBG 15s ease infinite; color: white; }
+        .page { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; text-align: center; position: relative; overflow: hidden; }
+        #page1 { background: linear-gradient(-45deg, #f09433, #e6683c, #dc2743, #bc1888); background-size: 400% 400%; animation: gradientBG 10s ease infinite; color: white; }
         @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        #title-container { perspective: 800px; }
+        .title-char { display: inline-block; opacity: 0; font-size: clamp(2.5rem, 10vw, 6rem); font-weight: 900; transition: transform 2s cubic-bezier(0.2, 1, 0.3, 1), opacity 2s, color 0.3s; cursor: pointer; }
+        .title-char.visible { opacity: 1; transform: translate3d(0, 0, 0) rotateX(0) rotateY(0) !important; }
+        .title-char:hover { animation: shake 0.4s; color: #fef08a; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px) rotate(-2deg); } 75% { transform: translateX(3px) rotate(2deg); } }
+        #subtitle-2025 { opacity: 0; transition: opacity 1s ease 0.8s; }
+        #subtitle-2025.visible { opacity: 1; }
+        #rotating-text-container { margin-top: 1.5rem; min-height: 5rem; display: flex; justify-content: center; align-items: center; opacity: 0; transition: opacity 1s ease 1s; }
+        #rotating-text-container.visible { opacity: 1; }
+        #rotating-text { font-size: 1.25rem; line-height: 1.75rem; }
+        .phrase-char { display: inline-block; opacity: 0; transform: translate(var(--start-x, 0), var(--start-y, 0)); transition: transform 1.5s cubic-bezier(0.2, 1, 0.3, 1), opacity 1.5s; }
+        .phrase-char.visible { opacity: 1; transform: translate(0, 0); }
+        #countdown { opacity: 0; transition: opacity 1s ease 1.2s; }
+        #countdown.visible { opacity: 1; }
         #countdown .time-box { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 1rem; padding: 1rem 1.5rem; min-width: 90px; }
         .card { background: white; border-radius: 1.5rem; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); padding: 2.5rem; transition: transform 0.3s ease; }
         .card:hover { transform: translateY(-10px); }
@@ -31,21 +47,20 @@
 </head>
 <body>
     <main>
-        <!-- Page 1: Title & Countdown -->
         <section id="page1" class="page">
-            <h1 class="text-6xl md:text-9xl font-black tracking-tighter">小舞子SUMMER</h1>
-            <p class="mt-4 text-xl md:text-3xl font-bold">2025</p>
-            <p class="mt-8 text-lg md:text-2xl max-w-2xl">この夏、最高の瞬間を、共に。</p>
-            <div id="countdown" class="flex flex-wrap justify-center gap-4 md:gap-8 mt-12">
-                <div class="time-box"><span id="days" class="text-4xl md:text-5xl font-bold">00</span><span class="text-sm md:text-base">Days</span></div>
-                <div class="time-box"><span id="hours" class="text-4xl md:text-5xl font-bold">00</span><span class="text-sm md:text-base">Hours</span></div>
-                <div class="time-box"><span id="minutes" class="text-4xl md:text-5xl font-bold">00</span><span class="text-sm md:text-base">Minutes</span></div>
-                <div class="time-box"><span id="seconds" class="text-4xl md:text-5xl font-bold">00</span><span class="text-sm md:text-base">Seconds</span></div>
+            <div id="page1-content" class="flex flex-col items-center justify-center h-full">
+                <div id="title-container"></div>
+                <h2 id="subtitle-2025" class="text-3xl md:text-4xl font-bold tracking-widest mt-2">2025</h2>
+                <div id="rotating-text-container"><p id="rotating-text" class="font-medium"></p></div>
+                <div id="countdown" class="flex flex-wrap justify-center gap-4 md:gap-8 mt-12">
+                    <div class="time-box"><span id="days" class="text-4xl md:text-5xl font-bold">00</span><span class="text-sm md:text-base">Days</span></div>
+                    <div class="time-box"><span id="hours" class="text-4xl md:text-5xl font-bold">00</span><span class="text-sm md:text-base">Hours</span></div>
+                    <div class="time-box"><span id="minutes" class="text-4xl md:text-5xl font-bold">00</span><span class="text-sm md:text-base">Minutes</span></div>
+                    <div class="time-box"><span id="seconds" class="text-4xl md:text-5xl font-bold">00</span><span class="text-sm md:text-base">Seconds</span></div>
+                </div>
             </div>
-            <a href="#page2" class="absolute bottom-10 animate-bounce"><svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></a>
+            <a href="#page2" class="absolute bottom-10 z-10 animate-bounce"><svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></a>
         </section>
-
-        <!-- Page 2: Details -->
         <section id="page2" class="page bg-slate-50">
             <h2 class="text-4xl md:text-6xl font-black text-slate-800 mb-12">EVENT DETAILS</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl">
@@ -55,136 +70,210 @@
             </div>
             <a href="#page3" class="mt-20 text-slate-500 hover:text-slate-800 transition"><span class="mr-2">フォトギャラリーへ</span><i data-feather="arrow-down" class="inline-block animate-bounce"></i></a>
         </section>
-
-        <!-- Page 3: Gallery -->
         <section id="page3" class="page bg-white">
-            <h2 class="text-4xl md:text-6xl font-black text-slate-800 mb-4">OUR MEMORIES</h2>
-            <p class="max-w-xl mx-auto text-slate-600 mb-10">イベントで撮った最高の写真をアップロード！みんなで夏の思い出を共有しよう。</p>
-            <div class="mb-10">
+             <h2 class="text-4xl md:text-6xl font-black text-slate-800 mb-4">OUR MEMORIES</h2>
+             <p class="max-w-xl mx-auto text-slate-600 mb-10">イベントで撮った最高の写真をアップロード！みんなで夏の思い出を共有しよう。</p>
+             <div class="mb-10">
                 <label for="imageUpload" class="inline-block text-white font-bold py-4 px-10 rounded-full cursor-pointer upload-btn"><i data-feather="camera" class="inline-block -mt-1 mr-2"></i><span>写真を投稿する</span></label>
                 <input type="file" id="imageUpload" class="hidden" accept="image/*" multiple>
             </div>
             <div id="uploadStatus" class="mb-8 text-slate-500 h-5"></div>
             <div id="imageGallery" class="gallery-grid max-w-5xl w-full"></div>
-            <a href="#page1" class="mt-20 text-slate-500 hover:text-slate-800 transition"><i data-feather="arrow-up" class="inline-block"></i><span class="ml-2">トップへ戻る</span></a>
+             <a href="#page1" class="mt-20 text-slate-500 hover:text-slate-800 transition"><i data-feather="arrow-up" class="inline-block"></i><span class="ml-2">トップへ戻る</span></a>
         </section>
     </main>
-
-    <!-- Modal for Image Viewing -->
     <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
         <span id="closeModal" class="absolute top-4 right-6 text-white text-5xl font-bold cursor-pointer hover:text-gray-300 transition">&times;</span>
         <img id="modalImage" class="max-w-full max-h-full object-contain" src="" alt="Modal Image View">
     </div>
 
     <script>
-        // --- Countdown Timer ---
-        const countdown = () => {
-            const eventDate = new Date('2025-07-20T11:00:00').getTime();
-            const now = new Date().getTime();
-            const difference = eventDate - now;
-            if (difference < 0) {
-                document.getElementById('countdown').innerHTML = '<div class="text-3xl font-bold">イベントは開始しました！</div>';
-                clearInterval(interval); return;
-            }
-            const d = Math.floor(difference / (1000 * 60 * 60 * 24));
-            const h = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const m = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-            const s = Math.floor((difference % (1000 * 60)) / 1000);
-            document.getElementById('days').innerText = d.toString().padStart(2, '0');
-            document.getElementById('hours').innerText = h.toString().padStart(2, '0');
-            document.getElementById('minutes').innerText = m.toString().padStart(2, '0');
-            document.getElementById('seconds').innerText = s.toString().padStart(2, '0');
-        };
-        const interval = setInterval(countdown, 1000);
-        countdown();
-
-        // --- Gallery & Upload Logic ---
-        const imageUploadInput = document.getElementById('imageUpload');
-        const imageGallery = document.getElementById('imageGallery');
-        const uploadStatus = document.getElementById('uploadStatus');
-
-        // Function to fetch images from our backend and display them
-        const fetchAndDisplayImages = async () => {
-            try {
-                const response = await fetch('/.netlify/functions/images');
-                if (!response.ok) throw new Error('Failed to fetch images.');
-                const images = await response.json();
+        document.addEventListener('DOMContentLoaded', () => {
+            const titleContainer = document.getElementById('title-container');
+            const mainTitle = "小舞子SUMMER";
+            mainTitle.split('').forEach(char => {
+                const charSpan = document.createElement('span');
+                charSpan.className = 'title-char';
+                charSpan.textContent = char;
+                titleContainer.appendChild(charSpan);
+            });
+            const titleChars = document.querySelectorAll('.title-char');
+            titleChars.forEach((char, index) => {
+                const x = Math.random() * 800 - 400;
+                const y = Math.random() * 800 - 400;
+                const z = Math.random() * 800 - 400;
+                const rx = Math.random() * 180 - 90;
+                const ry = Math.random() * 180 - 90;
+                char.style.transform = `translate3d(${x}px, ${y}px, ${z}px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+                setTimeout(() => { char.classList.add('visible'); }, 100 + index * 150);
+            });
+            
+            const phrases = [ "最高の夏は、もう始まってる。", "伝説の１日、目撃せよ。", "この日、すべてが特別になる。", "一生モノの思い出、つくらない？", "退屈な日常、ここでリセットしない？", "夏の本気、見せてみろ。", "太陽と、音楽と、最高の仲間と。" ];
+            const rotatingTextEl = document.getElementById('rotating-text');
+            let currentPhraseIndex = -1;
+            let phraseTimeout;
+            const showNextPhrase = () => {
+                if (phraseTimeout) clearTimeout(phraseTimeout);
+                let nextIndex;
+                do { nextIndex = Math.floor(Math.random() * phrases.length); } while (nextIndex === currentPhraseIndex);
+                currentPhraseIndex = nextIndex;
+                const phrase = phrases[currentPhraseIndex];
+                rotatingTextEl.innerHTML = ''; 
+                const characters = phrase.split('');
+                characters.forEach((char, index) => {
+                    const charSpan = document.createElement('span');
+                    charSpan.className = 'phrase-char';
+                    charSpan.textContent = char;
+                    const x = Math.random() * 200 - 100;
+                    const y = Math.random() * 80 - 40;
+                    charSpan.style.setProperty('--start-x', `${x}px`);
+                    charSpan.style.setProperty('--start-y', `${y}px`);
+                    rotatingTextEl.appendChild(charSpan);
+                });
                 
-                imageGallery.innerHTML = ''; // Clear gallery
-                images.forEach(img => {
-                    const div = document.createElement('div');
-                    div.className = "gallery-item";
-                    const imgElement = document.createElement('img');
-                    imgElement.src = img.thumbnailLink; // Use thumbnail for grid
-                    imgElement.dataset.fullSrc = `https://drive.google.com/uc?export=view&id=${img.id}`; // Store full res link
-                    imgElement.alt = img.name;
-                    div.appendChild(imgElement);
-                    imageGallery.prepend(div);
-                });
-            } catch (error) {
-                console.error('Error fetching images:', error);
-                uploadStatus.textContent = '画像の読み込みに失敗しました。';
-            }
-        };
-
-        // Listen for file selection
-        imageUploadInput.addEventListener('change', async (event) => {
-            const files = event.target.files;
-            if (!files.length) return;
-
-            uploadStatus.textContent = 'アップロード中...';
-            const formData = new FormData();
-            for (const file of files) {
-                formData.append('images', file);
-            }
-
-            try {
-                const response = await fetch('/.netlify/functions/upload', {
-                    method: 'POST',
-                    body: formData,
-                });
-                if (!response.ok) {
-                   const errorData = await response.json();
-                   throw new Error(errorData.message || 'Upload failed');
+                setTimeout(() => {
+                    const charSpans = rotatingTextEl.querySelectorAll('.phrase-char');
+                    let animationDuration = 0;
+                    charSpans.forEach((span, index) => {
+                        const staggerDelay = index * 80;
+                        setTimeout(() => { span.classList.add('visible'); }, staggerDelay);
+                        animationDuration = staggerDelay;
+                    });
+                    animationDuration += 1500; 
+                    const displayDuration = 5000;
+                    phraseTimeout = setTimeout(showNextPhrase, animationDuration + displayDuration);
+                }, 100);
+            };
+            setTimeout(() => {
+                document.getElementById('subtitle-2025').classList.add('visible');
+                document.getElementById('rotating-text-container').classList.add('visible');
+                document.getElementById('countdown').classList.add('visible');
+                showNextPhrase();
+            }, 2000); 
+            
+            const countdown = () => {
+                const eventDate = new Date('2025-07-20T11:00:00').getTime();
+                const now = new Date().getTime();
+                const difference = eventDate - now;
+                if (difference < 0) {
+                    const countdownEl = document.getElementById('countdown');
+                    if (countdownEl) { countdownEl.innerHTML = '<div class="text-3xl font-bold">イベントは開始しました！</div>'; }
+                    clearInterval(interval); return;
                 }
-                uploadStatus.textContent = 'アップロードが完了しました！';
-                await fetchAndDisplayImages(); // Refresh gallery
-            } catch (error) {
-                console.error('Upload Error:', error);
-                uploadStatus.textContent = `エラー: ${error.message}`;
-            } finally {
-                setTimeout(() => uploadStatus.textContent = '', 4000);
-            }
-            imageUploadInput.value = '';
+                const d = Math.floor(difference / (1000 * 60 * 60 * 24));
+                const h = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const m = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((difference % (1000 * 60)) / 1000);
+                document.getElementById('days').innerText = d.toString().padStart(2, '0');
+                document.getElementById('hours').innerText = h.toString().padStart(2, '0');
+                document.getElementById('minutes').innerText = m.toString().padStart(2, '0');
+                document.getElementById('seconds').innerText = s.toString().padStart(2, '0');
+            };
+            const interval = setInterval(countdown, 1000);
+            countdown();
+
+            const imageUploadInput = document.getElementById('imageUpload');
+            const imageGallery = document.getElementById('imageGallery');
+            const uploadStatus = document.getElementById('uploadStatus');
+            const isLiveEnvironment = window.location.hostname.endsWith('netlify.app');
+            const fetchAndDisplayImages = async () => {
+                 if (!isLiveEnvironment) {
+                    uploadStatus.textContent = 'プレビューモードではギャラリーは表示されません。';
+                    return;
+                 }
+                 try {
+                    const response = await fetch('/.netlify/functions/images');
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ message: 'Failed to fetch images.' }));
+                        throw new Error(errorData.message);
+                    }
+                    const images = await response.json();
+                    imageGallery.innerHTML = '';
+                    images.forEach(img => {
+                        const div = document.createElement('div');
+                        div.className = "gallery-item";
+                        const imgElement = document.createElement('img');
+                        imgElement.src = img.thumbnailLink;
+                        imgElement.dataset.fullSrc = `https://drive.google.com/uc?export=view&id=${img.id}`;
+                        imgElement.alt = img.name;
+                        div.appendChild(imgElement);
+                        imageGallery.prepend(div);
+                    });
+                } catch (error) {
+                    console.error('Error fetching images:', error);
+                    uploadStatus.textContent = `エラー: ${error.message}`;
+                }
+            };
+            imageUploadInput.addEventListener('change', async (event) => {
+                const files = event.target.files;
+                if (!files.length) return;
+                if (!isLiveEnvironment) {
+                    uploadStatus.textContent = 'プレビューではアップロードできません。';
+                    for (const file of files) {
+                        if (!file.type.startsWith('image/')) continue;
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const div = document.createElement('div');
+                            div.className = "gallery-item";
+                            const imgElement = document.createElement('img');
+                            imgElement.src = e.target.result;
+                            imgElement.dataset.fullSrc = e.target.result;
+                            imgElement.alt = "Local Preview";
+                            div.appendChild(imgElement);
+                            imageGallery.prepend(div);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                    setTimeout(() => { uploadStatus.textContent = '' }, 4000);
+                    imageUploadInput.value = '';
+                    return;
+                }
+                uploadStatus.textContent = 'アップロード中...';
+                const formData = new FormData();
+                for (const file of files) { formData.append('images', file); }
+                try {
+                    const response = await fetch('/.netlify/functions/upload', {
+                        method: 'POST',
+                        body: formData,
+                    });
+                    if (!response.ok) {
+                       const errorData = await response.json().catch(() => ({ message: 'Upload failed with non-JSON response.'}));
+                       throw new Error(errorData.message);
+                    }
+                    uploadStatus.textContent = 'アップロードが完了しました！';
+                    await fetchAndDisplayImages();
+                } catch (error) {
+                    console.error('Upload Error:', error);
+                    uploadStatus.textContent = `エラー: ${error.message}`;
+                } finally {
+                    setTimeout(() => { if (uploadStatus.textContent.includes('アップロード')) { uploadStatus.textContent = ''; } }, 4000);
+                }
+                imageUploadInput.value = '';
+            });
+            fetchAndDisplayImages();
+            
+            const imageModal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            const openModal = (src) => {
+                modalImage.src = src;
+                imageModal.classList.remove('opacity-0', 'pointer-events-none');
+                imageModal.classList.add('visible');
+                document.body.style.overflow = 'hidden';
+            };
+            const closeModal = () => {
+                imageModal.classList.add('opacity-0', 'pointer-events-none');
+                imageModal.classList.remove('visible');
+                document.body.style.overflow = '';
+            };
+            imageGallery.addEventListener('click', (e) => {
+                const img = e.target.closest('img');
+                if (img && img.dataset.fullSrc) { openModal(img.dataset.fullSrc); }
+            });
+            document.getElementById('closeModal').addEventListener('click', closeModal);
+            imageModal.addEventListener('click', (e) => { if (e.target === imageModal) closeModal(); });
+
+            feather.replace();
         });
-
-        // Initial load of images when the page is ready
-        document.addEventListener('DOMContentLoaded', fetchAndDisplayImages);
-
-
-        // --- Modal Logic ---
-        const imageModal = document.getElementById('imageModal');
-        const modalImage = document.getElementById('modalImage');
-        const openModal = (src) => {
-            modalImage.src = src;
-            imageModal.classList.remove('opacity-0', 'pointer-events-none');
-            imageModal.classList.add('visible');
-            document.body.style.overflow = 'hidden';
-        };
-        const closeModal = () => {
-            imageModal.classList.add('opacity-0', 'pointer-events-none');
-            imageModal.classList.remove('visible');
-            document.body.style.overflow = '';
-        };
-        imageGallery.addEventListener('click', (e) => {
-            if (e.target.tagName === 'IMG' && e.target.dataset.fullSrc) {
-                openModal(e.target.dataset.fullSrc);
-            }
-        });
-        document.getElementById('closeModal').addEventListener('click', closeModal);
-        imageModal.addEventListener('click', (e) => { if (e.target === imageModal) closeModal(); });
-
-        feather.replace();
     </script>
 </body>
 </html>
