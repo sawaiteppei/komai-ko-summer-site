@@ -113,7 +113,6 @@
         import { getFirestore, doc, onSnapshot, updateDoc, arrayUnion, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         document.addEventListener('DOMContentLoaded', async () => {
-            // --- Firebase Initialization ---
             let db;
             try {
                 const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
@@ -129,18 +128,16 @@
                 console.error("Firebase initialization failed. Running in preview mode.", e);
             }
 
-            // --- UI Elements ---
             const imageUploadInput = document.getElementById('imageUpload'), imageGallery = document.getElementById('imageGallery'), uploadStatus = document.getElementById('uploadStatus');
             const imageModal = document.getElementById('imageModal'), modalImage = document.getElementById('modalImage'), closeModalBtn = document.getElementById('closeModal');
             const commentForm = document.getElementById('comment-form'), commentInput = document.getElementById('comment-input'), commentList = document.getElementById('comment-list');
             const deleteConfirmModal = document.getElementById('deleteConfirmModal'), cancelDelete = document.getElementById('cancelDelete'), confirmDelete = document.getElementById('confirmDelete');
             
-            // --- State Variables ---
             let currentFileId = null;
             let unsubscribeComments = null;
             const isLiveEnvironment = window.location.hostname.endsWith('netlify.app');
 
-            // --- Page 1 Animations ---
+            const mainTitle = "小舞子SUMMER";
             const titleContainer = document.getElementById('title-container');
             mainTitle.split('').forEach(char => {
                 const charSpan = document.createElement('span'); charSpan.className = 'title-char'; charSpan.textContent = char; titleContainer.appendChild(charSpan);
@@ -176,14 +173,59 @@
             }, 2000);
             const countdown = () => {
                 const diff = new Date('2025-07-20T11:00:00').getTime() - new Date().getTime();
-                if (diff < 0) { const el = document.getElementById('countdown'); if(el) el.innerHTML = '<div class="text-3xl font-bold">イベントは開始しました！</div>'; clearInterval(interval); return; }
+                if (diff < 0) { const el = document.getElementById('countdown'); if(el) el.innerHTML = '<div class="text-3xl font-bold text-center w-full">イベントは開始しました！</div>'; clearInterval(interval); return; }
                 const d = Math.floor(diff / 86400000), h = Math.floor(diff % 86400000 / 3600000), m = Math.floor(diff % 3600000 / 60000), s = Math.floor(diff % 60000 / 1000);
                 document.getElementById('days').innerText = d.toString().padStart(2, '0'); document.getElementById('hours').innerText = h.toString().padStart(2, '0'); document.getElementById('minutes').innerText = m.toString().padStart(2, '0'); document.getElementById('seconds').innerText = s.toString().padStart(2, '0');
             };
             const interval = setInterval(countdown, 1000); countdown();
 
-            // --- Gallery & Modal Logic ---
-            const fetchAndDisplayImages = async () => { /* ... see full guide ... */ }; // Placeholder for brevity
+            const renderGallery = (images) => {
+                imageGallery.innerHTML = '';
+                images.forEach(img => {
+                    const div = document.createElement('div');
+                    div.className = "gallery-item";
+                    div.dataset.fileId = img.id;
+                    const imgElement = document.createElement('img');
+                    imgElement.src = img.thumbnailLink;
+                    const largeSrc = img.webContentLink ? img.webContentLink.replace('&export=download', '') : (img.thumbnailLink ? img.thumbnailLink.replace(/=s\d+/, '=s1600') : '');
+                    imgElement.dataset.fullSrc = largeSrc;
+                    imgElement.alt = img.name;
+                    const deleteBtn = document.createElement('div');
+                    deleteBtn.className = "delete-btn";
+                    deleteBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+                    div.appendChild(imgElement);
+                    div.appendChild(deleteBtn);
+                    imageGallery.prepend(div);
+                });
+            }
+
+            const fetchAndDisplayImages = async () => {
+                 if (!isLiveEnvironment) { uploadStatus.textContent = 'プレビューモードではギャラリーは表示されません。'; return; }
+                 try {
+                    uploadStatus.textContent = 'ギャラリーを読み込んでいます...';
+                    const response = await fetch('/.netlify/functions/images');
+                    if (!response.ok) { const errorData = await response.json().catch(() => ({ message: 'Failed to fetch images.' })); throw new Error(errorData.message); }
+                    const images = await response.json();
+                    renderGallery(images);
+                    uploadStatus.textContent = '';
+                } catch (error) { console.error('Error fetching images:', error); uploadStatus.textContent = `エラー: ${error.message}`; }
+            };
+
+            imageUploadInput.addEventListener('change', async (event) => {
+                const files = event.target.files;
+                if (!files.length || !isLiveEnvironment) return;
+                uploadStatus.textContent = 'アップロード中...';
+                const formData = new FormData();
+                for (const file of files) { formData.append('images', file); }
+                try {
+                    const response = await fetch('/.netlify/functions/upload', { method: 'POST', body: formData });
+                    if (!response.ok) { const errorData = await response.json().catch(() => ({ message: 'Upload failed.'})); throw new Error(errorData.message); }
+                    uploadStatus.textContent = 'アップロード完了！';
+                    await fetchAndDisplayImages();
+                } catch (error) { console.error('Upload Error:', error); uploadStatus.textContent = `エラー: ${error.message}`; } finally { setTimeout(() => { if (uploadStatus.textContent.includes('アップロード')) uploadStatus.textContent = ''; }, 4000); }
+                imageUploadInput.value = '';
+            });
+
             const openModal = (fileId, imgSrc) => {
                 currentFileId = fileId;
                 modalImage.src = imgSrc;
@@ -191,6 +233,7 @@
                 if (db && isLiveEnvironment) {
                     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
                     const docRef = doc(db, `/artifacts/${appId}/public/data/photos`, fileId);
+                    if (unsubscribeComments) unsubscribeComments();
                     unsubscribeComments = onSnapshot(docRef, (docSnap) => {
                         commentList.innerHTML = '';
                         if (docSnap.exists() && docSnap.data().comments) {
@@ -200,50 +243,36 @@
                                 commentEl.textContent = comment.text;
                                 commentList.appendChild(commentEl);
                             });
-                        } else {
-                            commentList.innerHTML = '<p class="text-gray-500">まだコメントはありません。</p>';
                         }
+                        if (commentList.innerHTML === '') { commentList.innerHTML = '<p class="text-gray-500">まだコメントはありません。</p>'; }
                     });
                 }
                 imageModal.classList.remove('opacity-0', 'pointer-events-none');
             };
-            const closeModal = () => {
-                if (unsubscribeComments) unsubscribeComments();
-                imageModal.classList.add('opacity-0', 'pointer-events-none');
-            };
+            const closeModal = () => { if (unsubscribeComments) unsubscribeComments(); imageModal.classList.add('opacity-0', 'pointer-events-none'); };
             imageGallery.addEventListener('click', e => {
                 const target = e.target;
                 const galleryItem = target.closest('.gallery-item');
                 if (!galleryItem) return;
                 const fileId = galleryItem.dataset.fileId;
-                if (target.closest('.delete-btn')) {
-                    openDeleteConfirm(fileId, galleryItem);
-                } else {
-                    const img = galleryItem.querySelector('img');
-                    const largeSrc = img.dataset.fullSrc || img.src;
-                    openModal(fileId, largeSrc);
-                }
+                if (target.closest('.delete-btn')) { openDeleteConfirm(fileId, galleryItem); } 
+                else { const img = galleryItem.querySelector('img'); if (img) openModal(fileId, img.dataset.fullSrc || img.src); }
             });
             closeModalBtn.addEventListener('click', closeModal);
-            imageModal.addEventListener('click', e => { if(e.target === imageModal) closeModal(); });
-
-            // --- Commenting Logic ---
+            imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeModal(); });
+            
             commentForm.addEventListener('submit', async e => {
                 e.preventDefault();
                 const text = commentInput.value.trim();
                 if (!text || !currentFileId || !db || !isLiveEnvironment) return;
-
                 commentInput.disabled = true;
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
                 const docRef = doc(db, `/artifacts/${appId}/public/data/photos`, currentFileId);
                 const newComment = { text: text, timestamp: new Date().toISOString() };
-                try {
-                    await setDoc(docRef, { comments: arrayUnion(newComment) }, { merge: true });
-                    commentInput.value = '';
-                } catch (err) { console.error("Error adding comment: ", err); } finally { commentInput.disabled = false; }
+                try { await setDoc(docRef, { comments: arrayUnion(newComment) }, { merge: true }); commentInput.value = ''; }
+                catch (err) { console.error("Error adding comment: ", err); } finally { commentInput.disabled = false; commentInput.focus(); }
             });
             
-            // --- Deletion Logic ---
             const openDeleteConfirm = (fileId, galleryItem) => {
                 deleteConfirmModal.classList.remove('hidden');
                 confirmDelete.onclick = () => handleDelete(fileId, galleryItem);
@@ -251,7 +280,7 @@
             const closeDeleteConfirm = () => deleteConfirmModal.classList.add('hidden');
             cancelDelete.addEventListener('click', closeDeleteConfirm);
             const handleDelete = async (fileId, galleryItem) => {
-                if (!isLiveEnvironment) { alert("プレビューモードでは削除できません。"); closeDeleteConfirm(); return; }
+                if (!isLiveEnvironment) { return; }
                 uploadStatus.textContent = '削除中...';
                 closeDeleteConfirm();
                 try {
@@ -262,12 +291,7 @@
                 } catch (err) { console.error('Delete error:', err); uploadStatus.textContent = `削除エラー: ${err.message}`; } finally { setTimeout(() => uploadStatus.textContent = '', 4000); }
             };
 
-            fetchAndDisplayImages = async () => { /* ... see full guide ... */ }; // Placeholder for brevity, use full code
-            imageUploadInput.addEventListener('change', async (event) => { /* ... see full guide ... */ }); // Placeholder for brevity, use full code
-
-            // Replace placeholders with full functions from the guide
-            // ... (The full JS code would be too long here, refer to the full guide document)
-
+            fetchAndDisplayImages();
             feather.replace();
         });
     </script>
