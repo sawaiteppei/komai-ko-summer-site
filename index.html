@@ -35,11 +35,10 @@
         .card { background: white; border-radius: 1.5rem; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); padding: 2.5rem; transition: transform 0.3s ease; }
         .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); md:grid-template-columns: repeat(3, 1fr); gap: 1rem; }
         .gallery-item { position: relative; width: 100%; padding-top: 100%; background-color: #e2e8f0; border-radius: 1rem; overflow: hidden; }
-        .gallery-item a { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-        .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+        .gallery-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
         .gallery-item:hover img { transform: scale(1.05); }
-        .item-overlay { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-end; gap: 0.5rem; padding: 0.5rem; background: linear-gradient(to top, rgba(0,0,0,0.6), transparent); opacity: 0; transition: opacity 0.3s ease; }
-        .gallery-item:hover .item-overlay { opacity: 1; }
+        .item-overlay { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-end; gap: 0.5rem; padding: 0.5rem; background: linear-gradient(to top, rgba(0,0,0,0.6), transparent); opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+        .gallery-item:hover .item-overlay { opacity: 1; pointer-events: auto; }
         .overlay-btn { background-color: rgba(0,0,0,0.5); border-radius: 9999px; padding: 0.5rem; cursor: pointer; transition: background-color 0.2s; }
         .overlay-btn:hover { background-color: rgba(0,0,0,0.8); }
         #comment-section { max-width: 640px; margin-top: 3rem; background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); transition: opacity 0.5s, transform 0.5s; }
@@ -105,15 +104,19 @@
         
         document.addEventListener('DOMContentLoaded', async () => {
             let db;
+            let isFirebaseReady = false;
             try {
                 const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                const auth = getAuth(app);
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
+                if (Object.keys(firebaseConfig).length > 0) {
+                    const app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    const auth = getAuth(app);
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    isFirebaseReady = true;
                 }
             } catch (e) {
                 console.error("Firebase initialization failed. Running in preview mode.", e);
@@ -180,29 +183,22 @@
                     const div = document.createElement('div');
                     div.className = "gallery-item";
                     div.dataset.fileId = img.id;
-                    const link = document.createElement('a');
-                    link.href = img.webViewLink;
-                    link.target = "_blank";
-                    link.rel = "noopener noreferrer";
-
                     const imgElement = document.createElement('img');
                     imgElement.src = img.thumbnailLink;
                     imgElement.alt = img.name;
-                    
-                    link.appendChild(imgElement);
+                    div.appendChild(imgElement);
 
                     const overlay = document.createElement('div');
                     overlay.className = 'item-overlay';
                     overlay.innerHTML = `
                         <div class="comment-btn overlay-btn" title="コメントを見る">
-                            <i data-feather="message-square" class="w-5 h-5 text-white"></i>
+                            <i data-feather="message-square" class="w-5 h-5 text-white pointer-events-none"></i>
                         </div>
                         <div class="delete-btn overlay-btn" title="削除">
-                             <i data-feather="trash-2" class="w-5 h-5 text-white"></i>
+                             <i data-feather="trash-2" class="w-5 h-5 text-white pointer-events-none"></i>
                         </div>
                     `;
                     
-                    div.appendChild(link);
                     div.appendChild(overlay);
                     imageGallery.prepend(div);
                 });
@@ -226,8 +222,8 @@
                 if (!isLiveEnvironment) {
                     for (const file of files) { if (!file.type.startsWith('image/')) continue; const reader = new FileReader(); reader.onload = (e) => {
                             const div = document.createElement('div'); div.className = "gallery-item";
-                            const link = document.createElement('a'); const imgElement = document.createElement('img'); imgElement.src = e.target.result;
-                            link.appendChild(imgElement); div.appendChild(link); imageGallery.prepend(div);
+                            const imgElement = document.createElement('img'); imgElement.src = e.target.result;
+                            div.appendChild(imgElement); imageGallery.prepend(div);
                         }; reader.readAsDataURL(file);
                     } return;
                 }
@@ -249,6 +245,7 @@
             });
             
             const displayCommentUI = (fileId, imgSrc) => {
+                if (unsubscribeComments) unsubscribeComments();
                 currentFileId = fileId;
                 commentSection.innerHTML = `
                     <div class="flex items-start gap-4 w-full">
@@ -268,10 +265,9 @@
                 commentSection.scrollIntoView({ behavior: 'smooth' });
 
                 const commentListInline = document.getElementById('comment-list-inline');
-                if (db) {
+                if (db && isFirebaseReady) {
                     const appId = isLiveEnvironment ? APP_ID : (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
                     const docRef = doc(db, `artifacts/${appId}/public/data/photos`, fileId);
-                    if (unsubscribeComments) unsubscribeComments();
                     unsubscribeComments = onSnapshot(docRef, (docSnap) => {
                         commentListInline.innerHTML = '';
                         if (docSnap.exists() && docSnap.data().comments) {
@@ -285,7 +281,7 @@
                         if (commentListInline.innerHTML === '') { commentListInline.innerHTML = '<p class="text-gray-500 text-sm">まだコメントはありません。</p>'; }
                     });
                 } else {
-                    commentListInline.innerHTML = '<p class="text-gray-500">コメント機能は利用できません。</p>';
+                    commentListInline.innerHTML = '<p class="text-gray-500">コメント機能は現在利用できません。Firebaseの設定を確認してください。</p>';
                 }
 
                 document.getElementById('comment-form-inline').addEventListener('submit', async e => {
