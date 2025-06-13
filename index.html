@@ -107,8 +107,6 @@
             let isFirebaseReady = false;
 
             // ★★★ Firebase設定の貼り付け場所（ここを編集） ★★★
-            // Firebaseコンソールのプロジェクト設定 > マイアプリ で「構成」を選択し、
-            // const firebaseConfig = { ... }; の部分をコピーして貼り付けてください。
             const firebaseConfig = {
               apiKey: "AIzaSyCQflm6Uo4AIMPGZFpXhKhMaFYlkMDlRl0",
               authDomain: "my-komai-ko-summer-app.firebaseapp.com",
@@ -127,9 +125,8 @@
                     await signInAnonymously(auth);
                     isFirebaseReady = true;
                 } else if (typeof __firebase_config !== 'undefined') {
-                    // Fallback for Canvas environment
                     const canvasConfig = JSON.parse(__firebase_config);
-                    const app = initializeApp(canvasConfig);
+                     const app = initializeApp(canvasConfig);
                     db = getFirestore(app);
                     const auth = getAuth(app);
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -140,7 +137,12 @@
                     isFirebaseReady = true;
                 }
             } catch (e) {
-                console.error("Firebase initialization failed.", e);
+                // Firebaseの二重初期化エラーを防ぐ
+                if (!/already exists/.test(e.message)) {
+                    console.error("Firebase initialization failed.", e);
+                } else {
+                    isFirebaseReady = true; // 既に初期化済みなのでOK
+                }
             }
 
             const imageUploadInput = document.getElementById('imageUpload'), imageGallery = document.getElementById('imageGallery'), uploadStatus = document.getElementById('uploadStatus');
@@ -344,4 +346,3 @@
     </script>
 </body>
 </html>
-
