@@ -35,12 +35,14 @@
         .card { background: white; border-radius: 1.5rem; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); padding: 2.5rem; transition: transform 0.3s ease; }
         .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); md:grid-template-columns: repeat(3, 1fr); gap: 1rem; }
         .gallery-item { position: relative; width: 100%; padding-top: 100%; background-color: #e2e8f0; border-radius: 1rem; overflow: hidden; }
-        .gallery-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: transform 0.3s ease; }
+        .gallery-item a { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
         .gallery-item:hover img { transform: scale(1.05); }
-        .delete-btn { position: absolute; top: 0.5rem; right: 0.5rem; z-index: 10; background-color: rgba(0,0,0,0.5); border-radius: 9999px; padding: 0.25rem; cursor: pointer; opacity: 0.6; transition: opacity 0.2s, background-color 0.2s; }
-        .delete-btn:hover { opacity: 1; background-color: rgba(220, 38, 38, 0.7); }
-        #imageModal.visible #modalContent { transform: scale(1); opacity: 1; }
-        #imageModal #modalContent { transform: scale(0.95); opacity: 0; transition: transform 0.3s ease, opacity 0.3s ease; }
+        .item-overlay { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-end; gap: 0.5rem; padding: 0.5rem; background: linear-gradient(to top, rgba(0,0,0,0.6), transparent); opacity: 0; transition: opacity 0.3s ease; }
+        .gallery-item:hover .item-overlay { opacity: 1; }
+        .overlay-btn { background-color: rgba(0,0,0,0.5); border-radius: 9999px; padding: 0.5rem; cursor: pointer; transition: background-color 0.2s; }
+        .overlay-btn:hover { background-color: rgba(0,0,0,0.8); }
+        #comment-section { max-width: 640px; margin-top: 3rem; background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); transition: opacity 0.5s, transform 0.5s; }
         #comment-list::-webkit-scrollbar { width: 4px; }
         #comment-list::-webkit-scrollbar-thumb { background-color: #9ca3af; border-radius: 2px; }
     </style>
@@ -81,22 +83,10 @@
             </div>
             <div id="uploadStatus" class="mb-8 text-slate-500 h-5"></div>
             <div id="imageGallery" class="gallery-grid max-w-5xl w-full"></div>
+            <section id="comment-section" class="w-full hidden"></section>
              <a href="#page1" class="mt-20 text-slate-500 hover:text-slate-800 transition"><i data-feather="arrow-up" class="inline-block"></i><span class="ml-2">トップへ戻る</span></a>
         </section>
     </main>
-    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-        <div id="modalContent" class="w-full max-w-6xl h-full max-h-[90vh] bg-white rounded-lg shadow-xl grid grid-cols-1 md:grid-cols-3">
-            <div class="md:col-span-2 bg-black flex items-center justify-center rounded-l-lg"><img id="modalImage" class="max-w-full max-h-full object-contain" src=""></div>
-            <div class="md:col-span-1 flex flex-col p-4 text-left text-black">
-                <div id="comment-list" class="flex-grow overflow-y-auto pr-2"></div>
-                <form id="comment-form" class="mt-4 flex gap-2">
-                    <input type="text" id="comment-input" placeholder="コメントを追加..." class="flex-grow border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button type="submit" class="bg-blue-500 text-white rounded-lg px-4 py-2 hover:bg-blue-600 transition-colors disabled:bg-gray-400"><i data-feather="send" class="w-5 h-5"></i></button>
-                </form>
-            </div>
-        </div>
-        <span id="closeModal" class="absolute top-2 right-4 text-white text-5xl font-bold cursor-pointer hover:text-gray-300">&times;</span>
-    </div>
     <div id="deleteConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-lg p-8 text-center text-black">
             <h3 class="text-lg font-bold mb-4">この写真を削除しますか？</h3>
@@ -130,14 +120,13 @@
             }
 
             const imageUploadInput = document.getElementById('imageUpload'), imageGallery = document.getElementById('imageGallery'), uploadStatus = document.getElementById('uploadStatus');
-            const imageModal = document.getElementById('imageModal'), modalContent = document.getElementById('modalContent'), modalImage = document.getElementById('modalImage'), closeModalBtn = document.getElementById('closeModal');
-            const commentForm = document.getElementById('comment-form'), commentInput = document.getElementById('comment-input'), commentList = document.getElementById('comment-list');
+            const commentSection = document.getElementById('comment-section');
             const deleteConfirmModal = document.getElementById('deleteConfirmModal'), cancelDelete = document.getElementById('cancelDelete'), confirmDelete = document.getElementById('confirmDelete');
             
             let currentFileId = null;
             let unsubscribeComments = null;
             const isLiveEnvironment = window.location.hostname.endsWith('netlify.app');
-            const APP_ID = 'komai-ko-summer-site'; // This should match your Netlify APP_ID environment variable
+            const APP_ID = 'komai-ko-summer-site'; 
             
             const mainTitle = "小舞子SUMMER";
             const titleContainer = document.getElementById('title-container');
@@ -191,16 +180,30 @@
                     const div = document.createElement('div');
                     div.className = "gallery-item";
                     div.dataset.fileId = img.id;
+                    const link = document.createElement('a');
+                    link.href = img.webViewLink;
+                    link.target = "_blank";
+                    link.rel = "noopener noreferrer";
+
                     const imgElement = document.createElement('img');
                     imgElement.src = img.thumbnailLink;
-                    const largeSrc = `https://drive.google.com/uc?export=view&id=${img.id}`;
-                    imgElement.dataset.fullSrc = largeSrc;
                     imgElement.alt = img.name;
-                    const deleteBtn = document.createElement('div');
-                    deleteBtn.className = "delete-btn";
-                    deleteBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
-                    div.appendChild(imgElement);
-                    div.appendChild(deleteBtn);
+                    
+                    link.appendChild(imgElement);
+
+                    const overlay = document.createElement('div');
+                    overlay.className = 'item-overlay';
+                    overlay.innerHTML = `
+                        <div class="comment-btn overlay-btn" title="コメントを見る">
+                            <i data-feather="message-square" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <div class="delete-btn overlay-btn" title="削除">
+                             <i data-feather="trash-2" class="w-5 h-5 text-white"></i>
+                        </div>
+                    `;
+                    
+                    div.appendChild(link);
+                    div.appendChild(overlay);
                     imageGallery.prepend(div);
                 });
                 feather.replace();
@@ -219,83 +222,86 @@
             };
 
             imageUploadInput.addEventListener('change', async (event) => {
-                const files = event.target.files;
-                if (!files.length) return;
+                const files = event.target.files; if (!files.length) return;
                 if (!isLiveEnvironment) {
-                    for (const file of files) {
-                        if (!file.type.startsWith('image/')) continue;
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
+                    for (const file of files) { if (!file.type.startsWith('image/')) continue; const reader = new FileReader(); reader.onload = (e) => {
                             const div = document.createElement('div'); div.className = "gallery-item";
-                            const imgElement = document.createElement('img'); imgElement.src = e.target.result; imgElement.dataset.fullSrc = e.target.result;
-                            div.appendChild(imgElement); imageGallery.prepend(div);
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                    return;
+                            const link = document.createElement('a'); const imgElement = document.createElement('img'); imgElement.src = e.target.result;
+                            link.appendChild(imgElement); div.appendChild(link); imageGallery.prepend(div);
+                        }; reader.readAsDataURL(file);
+                    } return;
                 }
-                uploadStatus.textContent = 'アップロード中...';
-                const formData = new FormData();
+                uploadStatus.textContent = 'アップロード中...'; const formData = new FormData();
                 for (const file of files) { formData.append('images', file); }
                 try {
                     const response = await fetch('/.netlify/functions/upload', { method: 'POST', body: formData });
                     if (!response.ok) { const errorData = await response.json().catch(() => ({ message: 'Upload failed.'})); throw new Error(errorData.message); }
-                    uploadStatus.textContent = 'アップロード完了！';
-                    await fetchAndDisplayImages();
+                    uploadStatus.textContent = 'アップロード完了！'; await fetchAndDisplayImages();
                 } catch (error) { console.error('Upload Error:', error); uploadStatus.textContent = `エラー: ${error.message}`; } finally { setTimeout(() => { if (uploadStatus.textContent.includes('アップロード')) uploadStatus.textContent = ''; }, 4000); }
                 imageUploadInput.value = '';
             });
 
-            const openModal = (fileId, imgSrc) => {
+            imageGallery.addEventListener('click', e => {
+                const galleryItem = e.target.closest('.gallery-item'); if (!galleryItem) return;
+                const fileId = galleryItem.dataset.fileId;
+                if (e.target.closest('.delete-btn')) { e.preventDefault(); openDeleteConfirm(fileId, galleryItem); } 
+                else if (e.target.closest('.comment-btn')) { e.preventDefault(); displayCommentUI(fileId, galleryItem.querySelector('img').src); }
+            });
+            
+            const displayCommentUI = (fileId, imgSrc) => {
                 currentFileId = fileId;
-                modalImage.src = imgSrc;
-                imageModal.classList.remove('opacity-0', 'pointer-events-none');
-                modalContent.classList.add('visible');
+                commentSection.innerHTML = `
+                    <div class="flex items-start gap-4 w-full">
+                        <img src="${imgSrc}" class="w-24 h-24 object-cover rounded-lg">
+                        <div class="flex-grow text-left">
+                            <h3 class="font-bold mb-2">コメント</h3>
+                            <div id="comment-list-inline" class="max-h-48 overflow-y-auto pr-2 mb-2"></div>
+                            <form id="comment-form-inline" class="flex gap-2">
+                                <input type="text" id="comment-input-inline" placeholder="コメントを追加..." class="flex-grow border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black">
+                                <button type="submit" class="bg-blue-500 text-white rounded-lg px-4 py-2 hover:bg-blue-600 transition-colors disabled:bg-gray-400"><i data-feather="send" class="w-5 h-5"></i></button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+                commentSection.classList.remove('hidden');
+                feather.replace();
+                commentSection.scrollIntoView({ behavior: 'smooth' });
 
+                const commentListInline = document.getElementById('comment-list-inline');
                 if (db) {
                     const appId = isLiveEnvironment ? APP_ID : (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
                     const docRef = doc(db, `artifacts/${appId}/public/data/photos`, fileId);
                     if (unsubscribeComments) unsubscribeComments();
                     unsubscribeComments = onSnapshot(docRef, (docSnap) => {
-                        commentList.innerHTML = '';
+                        commentListInline.innerHTML = '';
                         if (docSnap.exists() && docSnap.data().comments) {
                             docSnap.data().comments.forEach(comment => {
                                 const commentEl = document.createElement('div');
-                                commentEl.className = 'bg-gray-100 rounded-lg p-3 mb-2';
+                                commentEl.className = 'bg-gray-100 rounded-lg p-3 mb-2 text-sm text-gray-800';
                                 commentEl.textContent = comment.text;
-                                commentList.appendChild(commentEl);
+                                commentListInline.appendChild(commentEl);
                             });
                         }
-                        if (commentList.innerHTML === '') { commentList.innerHTML = '<p class="text-gray-500">まだコメントはありません。</p>'; }
+                        if (commentListInline.innerHTML === '') { commentListInline.innerHTML = '<p class="text-gray-500 text-sm">まだコメントはありません。</p>'; }
                     });
                 } else {
-                    commentList.innerHTML = '<p class="text-gray-500">コメント機能は利用できません。</p>';
+                    commentListInline.innerHTML = '<p class="text-gray-500">コメント機能は利用できません。</p>';
                 }
+
+                document.getElementById('comment-form-inline').addEventListener('submit', async e => {
+                    e.preventDefault();
+                    const input = document.getElementById('comment-input-inline');
+                    const text = input.value.trim();
+                    if (!text || !currentFileId || !db) return;
+                    input.disabled = true;
+                    const appId = isLiveEnvironment ? APP_ID : (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
+                    const docRef = doc(db, `artifacts/${appId}/public/data/photos`, currentFileId);
+                    const newComment = { text: text, timestamp: new Date().toISOString() };
+                    try { await setDoc(docRef, { comments: arrayUnion(newComment) }, { merge: true }); input.value = ''; }
+                    catch (err) { console.error("Error adding comment: ", err); } finally { input.disabled = false; input.focus(); }
+                });
             };
-            const closeModal = () => { if (unsubscribeComments) unsubscribeComments(); imageModal.classList.add('opacity-0', 'pointer-events-none'); modalContent.classList.remove('visible');};
-            imageGallery.addEventListener('click', e => {
-                const target = e.target;
-                const galleryItem = target.closest('.gallery-item');
-                if (!galleryItem) return;
-                const fileId = galleryItem.dataset.fileId;
-                if (target.closest('.delete-btn')) { openDeleteConfirm(fileId, galleryItem); } 
-                else { const img = galleryItem.querySelector('img'); if (img && img.dataset.fullSrc) openModal(fileId, img.dataset.fullSrc); }
-            });
-            closeModalBtn.addEventListener('click', closeModal);
-            imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeModal(); });
-            
-            commentForm.addEventListener('submit', async e => {
-                e.preventDefault();
-                const text = commentInput.value.trim();
-                if (!text || !currentFileId || !db) return;
-                commentInput.disabled = true;
-                const appId = isLiveEnvironment ? APP_ID : (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
-                const docRef = doc(db, `artifacts/${appId}/public/data/photos`, currentFileId);
-                const newComment = { text: text, timestamp: new Date().toISOString() };
-                try { await setDoc(docRef, { comments: arrayUnion(newComment) }, { merge: true }); commentInput.value = ''; }
-                catch (err) { console.error("Error adding comment: ", err); } finally { commentInput.disabled = false; commentInput.focus(); }
-            });
-            
+
             const openDeleteConfirm = (fileId, galleryItem) => {
                 deleteConfirmModal.classList.remove('hidden');
                 confirmDelete.onclick = () => handleDelete(fileId, galleryItem);
@@ -310,6 +316,7 @@
                     const response = await fetch('/.netlify/functions/delete', { method: 'POST', body: JSON.stringify({ fileId }) });
                     if (!response.ok) { const err = await response.json(); throw new Error(err.message); }
                     galleryItem.remove();
+                    if(currentFileId === fileId) commentSection.classList.add('hidden');
                     uploadStatus.textContent = '削除しました。';
                 } catch (err) { console.error('Delete error:', err); uploadStatus.textContent = `削除エラー: ${err.message}`; } finally { setTimeout(() => uploadStatus.textContent = '', 4000); }
             };

@@ -14,7 +14,7 @@ exports.handler = async () => {
     const drive = google.drive({ version: 'v3', auth });
     const res = await drive.files.list({
       q: `'${folderId}' in parents and mimeType contains 'image/'`,
-      fields: 'files(id, name, thumbnailLink, webContentLink)',
+      fields: 'files(id, name, thumbnailLink, webViewLink)',
       orderBy: 'createdTime desc',
       pageSize: 50,
     });
