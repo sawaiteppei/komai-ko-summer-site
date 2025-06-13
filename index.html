@@ -99,27 +99,56 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, updateDoc, arrayUnion, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         document.addEventListener('DOMContentLoaded', async () => {
             let db;
             let isFirebaseReady = false;
+
+            // ★★★ ここにFirebaseの設定を貼り付け ★★★
+            // Firebaseコンソールのプロジェクト設定 > マイアプリ で確認できます
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyCQflm6Uo4AIMPGZFpXhKhMaFYlkMDlRl0",
+  authDomain: "my-komai-ko-summer-app.firebaseapp.com",
+  projectId: "my-komai-ko-summer-app",
+  storageBucket: "my-komai-ko-summer-app.firebasestorage.app",
+  messagingSenderId: "756080716689",
+  appId: "1:756080716689:web:6c0225507938a616938830"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+            // ★★★ ここまで ★★★
+
             try {
-                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-                if (Object.keys(firebaseConfig).length > 0) {
+                if (firebaseConfig && firebaseConfig.apiKey) {
                     const app = initializeApp(firebaseConfig);
                     db = getFirestore(app);
                     const auth = getAuth(app);
+                    await signInAnonymously(auth);
+                    isFirebaseReady = true;
+                } else if (typeof __firebase_config !== 'undefined') {
+                    // Fallback for Canvas environment
+                    const canvasConfig = JSON.parse(__firebase_config);
+                     const app = initializeApp(canvasConfig);
+                    db = getFirestore(app);
+                    const auth = getAuth(app);
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
+                         await signInWithCustomToken(auth, __initial_auth_token);
                     } else {
                         await signInAnonymously(auth);
                     }
                     isFirebaseReady = true;
                 }
             } catch (e) {
-                console.error("Firebase initialization failed. Running in preview mode.", e);
+                console.error("Firebase initialization failed.", e);
             }
 
             const imageUploadInput = document.getElementById('imageUpload'), imageGallery = document.getElementById('imageGallery'), uploadStatus = document.getElementById('uploadStatus');
