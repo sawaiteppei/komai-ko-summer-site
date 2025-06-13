@@ -98,7 +98,7 @@
     </div>
     
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, onSnapshot, updateDoc, arrayUnion, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
@@ -106,7 +106,7 @@
             let db;
             let isFirebaseReady = false;
 
-            // ★★★ Firebase設定の貼り付け場所（ここを編集） ★★★
+            // ★★★ Firebase設定の貼り付け場所 ★★★
             const firebaseConfig = {
               apiKey: "AIzaSyCQflm6Uo4AIMPGZFpXhKhMaFYlkMDlRl0",
               authDomain: "my-komai-ko-summer-app.firebaseapp.com",
@@ -117,35 +117,19 @@
             };
 
             try {
-                if (firebaseConfig && firebaseConfig.apiKey) {
+                if (getApps().length === 0) {
                     const app = initializeApp(firebaseConfig);
                     db = getFirestore(app);
                     const auth = getAuth(app);
                     await signInAnonymously(auth);
                     isFirebaseReady = true;
-                } else if (typeof __firebase_config !== 'undefined') {
-                    // Fallback for Canvas environment
-                    const canvasConfig = JSON.parse(__firebase_config);
-                    const app = initializeApp(canvasConfig);
+                } else {
+                    const app = getApp();
                     db = getFirestore(app);
-                    const auth = getAuth(app);
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                         await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
                     isFirebaseReady = true;
                 }
             } catch (e) {
-                if (!/already exists/.test(e.message)) {
-                    console.error("Firebase initialization failed.", e);
-                } else {
-                    // Firebase has already been initialized, which is fine.
-                    // We need to re-assign 'db' if it's not set.
-                    const existingApp = initializeApp(firebaseConfig, "DUPLICATE_APP_CHECK");
-                    db = getFirestore(existingApp);
-                    isFirebaseReady = true;
-                }
+                console.error("Firebase initialization failed.", e);
             }
 
             const imageUploadInput = document.getElementById('imageUpload'), imageGallery = document.getElementById('imageGallery'), uploadStatus = document.getElementById('uploadStatus');
