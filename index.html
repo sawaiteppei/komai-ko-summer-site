@@ -30,8 +30,8 @@
         .phrase-char.visible { opacity: 1; transform: translate(0, 0); }
         #countdown-wrapper { opacity: 0; transition: opacity 1s ease 1.2s; min-height: 120px; display: flex; justify-content: center; align-items: center; }
         #countdown-wrapper.visible { opacity: 1; }
-        #countdown .time-box { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 1rem; padding: 1rem; width: 110px; /* Increase width */ }
-        #countdown .time-box span:first-child { font-family: monospace; display: block; /* Ensure it's a block for centering */ text-align: center; }
+        #countdown .time-box { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 1rem; padding: 1rem; width: 110px; }
+        #countdown .time-box span:first-child { font-family: monospace; display: block; text-align: center; }
         .card { background: white; border-radius: 1.5rem; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); padding: 2.5rem; transition: transform 0.3s ease; }
         .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); md:grid-template-columns: repeat(3, 1fr); gap: 1rem; }
         .gallery-item { position: relative; width: 100%; padding-top: 100%; background-color: #e2e8f0; border-radius: 1rem; overflow: hidden; }
@@ -193,7 +193,8 @@
                     div.dataset.fileId = img.id;
                     const imgElement = document.createElement('img');
                     imgElement.src = img.thumbnailLink;
-                    const largeSrc = img.webContentLink ? img.webContentLink.replace('&export=download', '') : (img.thumbnailLink ? img.thumbnailLink.replace(/=s\d+/, '=s1600') : '');
+                    // *** FIX: Use a reliable URL format for the modal image ***
+                    const largeSrc = `https://drive.google.com/uc?export=view&id=${img.id}`;
                     imgElement.dataset.fullSrc = largeSrc;
                     imgElement.alt = img.name;
                     const deleteBtn = document.createElement('div');
