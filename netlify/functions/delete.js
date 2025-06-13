@@ -32,7 +32,7 @@ exports.handler = async (event) => {
 
     const db = admin.firestore();
     const appId = process.env.APP_ID;
-    const docRef = db.collection(`/artifacts/${appId}/public/data/photos`).doc(fileId);
+    const docRef = db.collection(`artifacts`).doc(appId).collection('public').doc('data').collection('photos').doc(fileId);
     await docRef.delete();
 
     return { statusCode: 200, body: JSON.stringify({ message: 'File and comments deleted successfully.' }) };

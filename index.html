@@ -30,9 +30,10 @@
         .phrase-char.visible { opacity: 1; transform: translate(0, 0); }
         #countdown-wrapper { opacity: 0; transition: opacity 1s ease 1.2s; min-height: 120px; display: flex; justify-content: center; align-items: center; }
         #countdown-wrapper.visible { opacity: 1; }
-        #countdown .time-box { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 1rem; padding: 1rem 1.5rem; min-width: 90px; }
+        #countdown .time-box { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 1rem; padding: 1rem; width: 90px; }
+        #countdown .time-box span:first-child { font-family: monospace; }
         .card { background: white; border-radius: 1.5rem; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); padding: 2.5rem; transition: transform 0.3s ease; }
-        .gallery-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); md:grid-template-columns: repeat(3, 1fr); gap: 1rem; }
         .gallery-item { position: relative; width: 100%; padding-top: 100%; background-color: #e2e8f0; border-radius: 1rem; overflow: hidden; }
         .gallery-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; cursor: pointer; transition: transform 0.3s ease; }
         .gallery-item:hover img { transform: scale(1.05); }
@@ -129,14 +130,15 @@
             }
 
             const imageUploadInput = document.getElementById('imageUpload'), imageGallery = document.getElementById('imageGallery'), uploadStatus = document.getElementById('uploadStatus');
-            const imageModal = document.getElementById('imageModal'), modalImage = document.getElementById('modalImage'), closeModalBtn = document.getElementById('closeModal');
+            const imageModal = document.getElementById('imageModal'), modalContent = document.getElementById('modalContent'), modalImage = document.getElementById('modalImage'), closeModalBtn = document.getElementById('closeModal');
             const commentForm = document.getElementById('comment-form'), commentInput = document.getElementById('comment-input'), commentList = document.getElementById('comment-list');
             const deleteConfirmModal = document.getElementById('deleteConfirmModal'), cancelDelete = document.getElementById('cancelDelete'), confirmDelete = document.getElementById('confirmDelete');
             
             let currentFileId = null;
             let unsubscribeComments = null;
             const isLiveEnvironment = window.location.hostname.endsWith('netlify.app');
-
+            const APP_ID = 'komai-ko-summer-site'; // This should match your Netlify APP_ID environment variable
+            
             const mainTitle = "小舞子SUMMER";
             const titleContainer = document.getElementById('title-container');
             mainTitle.split('').forEach(char => {
@@ -173,7 +175,11 @@
             }, 2000);
             const countdown = () => {
                 const diff = new Date('2025-07-20T11:00:00').getTime() - new Date().getTime();
-                if (diff < 0) { const el = document.getElementById('countdown'); if(el) el.innerHTML = '<div class="text-3xl font-bold text-center w-full">イベントは開始しました！</div>'; clearInterval(interval); return; }
+                const countdownWrapper = document.getElementById('countdown-wrapper');
+                if (diff < 0) {
+                    if(countdownWrapper) countdownWrapper.innerHTML = '<div class="text-3xl font-bold text-center w-full">イベントは開始しました！</div>';
+                    clearInterval(interval); return;
+                }
                 const d = Math.floor(diff / 86400000), h = Math.floor(diff % 86400000 / 3600000), m = Math.floor(diff % 3600000 / 60000), s = Math.floor(diff % 60000 / 1000);
                 document.getElementById('days').innerText = d.toString().padStart(2, '0'); document.getElementById('hours').innerText = h.toString().padStart(2, '0'); document.getElementById('minutes').innerText = m.toString().padStart(2, '0'); document.getElementById('seconds').innerText = s.toString().padStart(2, '0');
             };
@@ -197,7 +203,8 @@
                     div.appendChild(deleteBtn);
                     imageGallery.prepend(div);
                 });
-            }
+                feather.replace();
+            };
 
             const fetchAndDisplayImages = async () => {
                  if (!isLiveEnvironment) { uploadStatus.textContent = 'プレビューモードではギャラリーは表示されません。'; return; }
@@ -213,7 +220,20 @@
 
             imageUploadInput.addEventListener('change', async (event) => {
                 const files = event.target.files;
-                if (!files.length || !isLiveEnvironment) return;
+                if (!files.length) return;
+                if (!isLiveEnvironment) {
+                    for (const file of files) {
+                        if (!file.type.startsWith('image/')) continue;
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const div = document.createElement('div'); div.className = "gallery-item";
+                            const imgElement = document.createElement('img'); imgElement.src = e.target.result; imgElement.dataset.fullSrc = e.target.result;
+                            div.appendChild(imgElement); imageGallery.prepend(div);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                    return;
+                }
                 uploadStatus.textContent = 'アップロード中...';
                 const formData = new FormData();
                 for (const file of files) { formData.append('images', file); }
@@ -229,10 +249,11 @@
             const openModal = (fileId, imgSrc) => {
                 currentFileId = fileId;
                 modalImage.src = imgSrc;
-                commentList.innerHTML = '<p class="text-gray-500">コメントを読み込み中...</p>';
-                if (db && isLiveEnvironment) {
-                    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                    const docRef = doc(db, `/artifacts/${appId}/public/data/photos`, fileId);
+                imageModal.classList.remove('opacity-0', 'pointer-events-none');
+                modalContent.classList.add('visible');
+
+                if (db) {
+                    const docRef = doc(db, `artifacts/${APP_ID}/public/data/photos`, fileId);
                     if (unsubscribeComments) unsubscribeComments();
                     unsubscribeComments = onSnapshot(docRef, (docSnap) => {
                         commentList.innerHTML = '';
@@ -246,17 +267,18 @@
                         }
                         if (commentList.innerHTML === '') { commentList.innerHTML = '<p class="text-gray-500">まだコメントはありません。</p>'; }
                     });
+                } else {
+                    commentList.innerHTML = '<p class="text-gray-500">コメント機能は利用できません。</p>';
                 }
-                imageModal.classList.remove('opacity-0', 'pointer-events-none');
             };
-            const closeModal = () => { if (unsubscribeComments) unsubscribeComments(); imageModal.classList.add('opacity-0', 'pointer-events-none'); };
+            const closeModal = () => { if (unsubscribeComments) unsubscribeComments(); imageModal.classList.add('opacity-0', 'pointer-events-none'); modalContent.classList.remove('visible');};
             imageGallery.addEventListener('click', e => {
                 const target = e.target;
                 const galleryItem = target.closest('.gallery-item');
                 if (!galleryItem) return;
                 const fileId = galleryItem.dataset.fileId;
                 if (target.closest('.delete-btn')) { openDeleteConfirm(fileId, galleryItem); } 
-                else { const img = galleryItem.querySelector('img'); if (img) openModal(fileId, img.dataset.fullSrc || img.src); }
+                else { const img = galleryItem.querySelector('img'); if (img && img.dataset.fullSrc) openModal(fileId, img.dataset.fullSrc); }
             });
             closeModalBtn.addEventListener('click', closeModal);
             imageModal.addEventListener('click', e => { if (e.target.id === 'imageModal') closeModal(); });
@@ -264,10 +286,9 @@
             commentForm.addEventListener('submit', async e => {
                 e.preventDefault();
                 const text = commentInput.value.trim();
-                if (!text || !currentFileId || !db || !isLiveEnvironment) return;
+                if (!text || !currentFileId || !db) return;
                 commentInput.disabled = true;
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                const docRef = doc(db, `/artifacts/${appId}/public/data/photos`, currentFileId);
+                const docRef = doc(db, `artifacts/${APP_ID}/public/data/photos`, currentFileId);
                 const newComment = { text: text, timestamp: new Date().toISOString() };
                 try { await setDoc(docRef, { comments: arrayUnion(newComment) }, { merge: true }); commentInput.value = ''; }
                 catch (err) { console.error("Error adding comment: ", err); } finally { commentInput.disabled = false; commentInput.focus(); }
