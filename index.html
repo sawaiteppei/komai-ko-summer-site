@@ -137,7 +137,7 @@
             let currentFileId = null;
             let unsubscribeComments = null;
             const isLiveEnvironment = window.location.hostname.endsWith('netlify.app');
-            const APP_ID = 'komai-ko-summer-site'; 
+            const APP_ID = 'komai-ko-summer-site'; // This should match your Netlify APP_ID environment variable
             
             const mainTitle = "小舞子SUMMER";
             const titleContainer = document.getElementById('title-container');
@@ -193,7 +193,7 @@
                     div.dataset.fileId = img.id;
                     const imgElement = document.createElement('img');
                     imgElement.src = img.thumbnailLink;
-                    const largeSrc = img.thumbnailLink ? img.thumbnailLink.replace(/=s\d+/, '=s1600') : `https://drive.google.com/uc?export=view&id=${img.id}`;
+                    const largeSrc = `https://drive.google.com/uc?export=view&id=${img.id}`;
                     imgElement.dataset.fullSrc = largeSrc;
                     imgElement.alt = img.name;
                     const deleteBtn = document.createElement('div');
