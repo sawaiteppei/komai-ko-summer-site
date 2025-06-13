@@ -106,7 +106,9 @@
             let db;
             let isFirebaseReady = false;
 
-            // ★★★ 貼り付けたコードをこの中に移動させ、正しい構造に修正 ★★★
+            // ★★★ Firebase設定の貼り付け場所（ここを編集） ★★★
+            // Firebaseコンソールのプロジェクト設定 > マイアプリ で「構成」を選択し、
+            // const firebaseConfig = { ... }; の部分をコピーして貼り付けてください。
             const firebaseConfig = {
               apiKey: "AIzaSyCQflm6Uo4AIMPGZFpXhKhMaFYlkMDlRl0",
               authDomain: "my-komai-ko-summer-app.firebaseapp.com",
@@ -115,6 +117,7 @@
               messagingSenderId: "756080716689",
               appId: "1:756080716689:web:6c0225507938a616938830"
             };
+            // ★★★ ここまで ★★★
 
             try {
                 if (firebaseConfig && firebaseConfig.apiKey) {
@@ -341,3 +344,4 @@
     </script>
 </body>
 </html>
+
