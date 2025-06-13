@@ -115,7 +115,6 @@
               messagingSenderId: "756080716689",
               appId: "1:756080716689:web:6c0225507938a616938830"
             };
-            // ★★★ ここまで ★★★
 
             try {
                 if (firebaseConfig && firebaseConfig.apiKey) {
@@ -125,8 +124,9 @@
                     await signInAnonymously(auth);
                     isFirebaseReady = true;
                 } else if (typeof __firebase_config !== 'undefined') {
+                    // Fallback for Canvas environment
                     const canvasConfig = JSON.parse(__firebase_config);
-                     const app = initializeApp(canvasConfig);
+                    const app = initializeApp(canvasConfig);
                     db = getFirestore(app);
                     const auth = getAuth(app);
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -137,11 +137,14 @@
                     isFirebaseReady = true;
                 }
             } catch (e) {
-                // Firebaseの二重初期化エラーを防ぐ
                 if (!/already exists/.test(e.message)) {
                     console.error("Firebase initialization failed.", e);
                 } else {
-                    isFirebaseReady = true; // 既に初期化済みなのでOK
+                    // Firebase has already been initialized, which is fine.
+                    // We need to re-assign 'db' if it's not set.
+                    const existingApp = initializeApp(firebaseConfig, "DUPLICATE_APP_CHECK");
+                    db = getFirestore(existingApp);
+                    isFirebaseReady = true;
                 }
             }
 
