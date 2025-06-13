@@ -253,7 +253,8 @@
                 modalContent.classList.add('visible');
 
                 if (db) {
-                    const docRef = doc(db, `artifacts/${APP_ID}/public/data/photos`, fileId);
+                    const appId = isLiveEnvironment ? APP_ID : (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
+                    const docRef = doc(db, `artifacts/${appId}/public/data/photos`, fileId);
                     if (unsubscribeComments) unsubscribeComments();
                     unsubscribeComments = onSnapshot(docRef, (docSnap) => {
                         commentList.innerHTML = '';
@@ -288,7 +289,8 @@
                 const text = commentInput.value.trim();
                 if (!text || !currentFileId || !db) return;
                 commentInput.disabled = true;
-                const docRef = doc(db, `artifacts/${APP_ID}/public/data/photos`, currentFileId);
+                const appId = isLiveEnvironment ? APP_ID : (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
+                const docRef = doc(db, `artifacts/${appId}/public/data/photos`, currentFileId);
                 const newComment = { text: text, timestamp: new Date().toISOString() };
                 try { await setDoc(docRef, { comments: arrayUnion(newComment) }, { merge: true }); commentInput.value = ''; }
                 catch (err) { console.error("Error adding comment: ", err); } finally { commentInput.disabled = false; commentInput.focus(); }
