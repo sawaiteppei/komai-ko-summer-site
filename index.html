@@ -115,17 +115,18 @@
               messagingSenderId: "756080716689",
               appId: "1:756080716689:web:6c0225507938a616938830"
             };
-
+            
             try {
-                if (getApps().length === 0) {
-                    const app = initializeApp(firebaseConfig);
-                    db = getFirestore(app);
-                    const auth = getAuth(app);
-                    await signInAnonymously(auth);
-                    isFirebaseReady = true;
-                } else {
-                    const app = getApp();
-                    db = getFirestore(app);
+                if (firebaseConfig && firebaseConfig.apiKey) {
+                    if (getApps().length === 0) {
+                        const app = initializeApp(firebaseConfig);
+                        db = getFirestore(app);
+                        const auth = getAuth(app);
+                        await signInAnonymously(auth);
+                    } else {
+                        const app = getApp();
+                        db = getFirestore(app);
+                    }
                     isFirebaseReady = true;
                 }
             } catch (e) {
