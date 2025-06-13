@@ -292,7 +292,7 @@
                         if (commentListInline.innerHTML === '') { commentListInline.innerHTML = '<p class="text-gray-500 text-sm">まだコメントはありません。</p>'; }
                     });
                 } else {
-                    commentListInline.innerHTML = '<p class="text-gray-500">コメント機能は現在利用できません。Firebaseの設定を確認してください。</p>';
+                    commentListInline.innerHTML = '<p class="text-gray-500">コメント機能は現在利用できません。</p>';
                 }
 
                 document.getElementById('comment-form-inline').addEventListener('submit', async e => {
