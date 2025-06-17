@@ -9,8 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/feather-icons"></script>
-    <!-- Physics Engine for animation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
 
     <style>
         html { scroll-behavior: smooth; }
@@ -35,24 +33,17 @@
         #countdown .time-box { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 1rem; padding: 1rem; width: 110px; }
         #countdown .time-box span:first-child { font-family: monospace; display: block; text-align: center; }
         .card { background: white; border-radius: 1.5rem; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); padding: 2.5rem; transition: transform 0.3s ease; }
-        /* --- Page 3 - Physics Gallery Styles --- */
-        #physics-gallery-container {
-            width: 100%;
-            height: 60vh;
-            max-width: 1000px;
-            margin-top: 2rem;
-            position: relative;
-            background: #ffffff;
-            border-radius: 1rem;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-        .physics-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
+        .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); md:grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .gallery-item { position: relative; width: 100%; padding-top: 100%; background-color: #e2e8f0; border-radius: 1rem; overflow: hidden; }
+        .gallery-item img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+        .gallery-item:hover img { transform: scale(1.05); }
+        .item-overlay { position: absolute; bottom: 0; left: 0; right: 0; display: flex; justify-end; gap: 0.5rem; padding: 0.5rem; background: linear-gradient(to top, rgba(0,0,0,0.6), transparent); opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+        .gallery-item:hover .item-overlay { opacity: 1; pointer-events: auto; }
+        .overlay-btn { background-color: rgba(0,0,0,0.5); border-radius: 9999px; padding: 0.5rem; cursor: pointer; transition: background-color 0.2s; }
+        .overlay-btn:hover { background-color: rgba(0,0,0,0.8); }
+        #comment-section { max-width: 640px; margin-top: 3rem; background: white; border-radius: 1rem; padding: 2rem; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); transition: opacity 0.5s, transform 0.5s; }
+        #comment-list::-webkit-scrollbar { width: 4px; }
+        #comment-list::-webkit-scrollbar-thumb { background-color: #9ca3af; border-radius: 2px; }
     </style>
 </head>
 <body>
@@ -84,28 +75,73 @@
         </section>
         <section id="page3" class="page bg-white">
              <h2 class="text-4xl md:text-6xl font-black text-slate-800 mb-4">OUR MEMORIES</h2>
-             <p class="max-w-xl mx-auto text-slate-600 mb-10">イベントで撮った最高の写真をアップロード！みんなで夏の思い出を共有しよう。</p>
+             <p class="max-w-xl mx-auto text-slate-600 mb-10">みんなで夏の思い出を共有。</p>
              <div class="mb-10">
                 <label for="imageUpload" class="inline-block text-white font-bold py-4 px-10 rounded-full cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors"><i data-feather="camera" class="inline-block -mt-1 mr-2"></i><span>写真を投稿する</span></label>
                 <input type="file" id="imageUpload" class="hidden" accept="image/*" multiple>
             </div>
             <div id="uploadStatus" class="mb-8 text-slate-500 h-5"></div>
-            <div id="physics-gallery-container">
-                <!-- Physics canvas will be rendered here -->
-            </div>
+            <div id="imageGallery" class="gallery-grid max-w-5xl w-full"></div>
+            <section id="comment-section" class="w-full hidden"></section>
              <a href="#page1" class="mt-20 text-slate-500 hover:text-slate-800 transition"><i data-feather="arrow-up" class="inline-block"></i><span class="ml-2">トップへ戻る</span></a>
         </section>
     </main>
+    <div id="deleteConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-lg p-8 text-center text-black">
+            <h3 class="text-lg font-bold mb-4">この写真を削除しますか？</h3>
+            <p class="text-sm text-gray-600 mb-6">この操作は元に戻せません。</p>
+            <div class="flex justify-center gap-4">
+                <button id="cancelDelete" class="px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">キャンセル</button>
+                <button id="confirmDelete" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">削除</button>
+            </div>
+        </div>
+    </div>
     
-    <script>
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, arrayUnion, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
         document.addEventListener('DOMContentLoaded', async () => {
-            
-            const imageUploadInput = document.getElementById('imageUpload');
-            const uploadStatus = document.getElementById('uploadStatus');
-            const physicsContainer = document.getElementById('physics-gallery-container');
-            const isLiveEnvironment = window.location.hostname.endsWith('netlify.app');
+            let db;
+            let isFirebaseReady = false;
 
-            // --- Page 1 Animations ---
+            // ★★★ Firebase設定の貼り付け場所 ★★★
+            const firebaseConfig = {
+              apiKey: "AIzaSyCQflm6Uo4AIMPGZFpXhKhMaFYlkMDlRl0",
+              authDomain: "my-komai-ko-summer-app.firebaseapp.com",
+              projectId: "my-komai-ko-summer-app",
+              storageBucket: "my-komai-ko-summer-app.appspot.com",
+              messagingSenderId: "756080716689",
+              appId: "1:756080716689:web:6c0225507938a616938830"
+            };
+            
+            try {
+                if (firebaseConfig && firebaseConfig.apiKey) {
+                    if (getApps().length === 0) {
+                        const app = initializeApp(firebaseConfig);
+                        db = getFirestore(app);
+                        const auth = getAuth(app);
+                        await signInAnonymously(auth);
+                    } else {
+                        const app = getApp();
+                        db = getFirestore(app);
+                    }
+                    isFirebaseReady = true;
+                }
+            } catch (e) {
+                console.error("Firebase initialization failed.", e);
+            }
+
+            const imageUploadInput = document.getElementById('imageUpload'), imageGallery = document.getElementById('imageGallery'), uploadStatus = document.getElementById('uploadStatus');
+            const commentSection = document.getElementById('comment-section');
+            const deleteConfirmModal = document.getElementById('deleteConfirmModal'), cancelDelete = document.getElementById('cancelDelete'), confirmDelete = document.getElementById('confirmDelete');
+            
+            let currentFileId = null;
+            let unsubscribeComments = null;
+            const isLiveEnvironment = window.location.hostname.endsWith('netlify.app');
+            const APP_ID = 'komai-ko-summer-site'; 
+            
             const mainTitle = "小舞子SUMMER";
             const titleContainer = document.getElementById('title-container');
             mainTitle.split('').forEach(char => {
@@ -151,130 +187,150 @@
                 document.getElementById('days').innerText = d.toString().padStart(2, '0'); document.getElementById('hours').innerText = h.toString().padStart(2, '0'); document.getElementById('minutes').innerText = m.toString().padStart(2, '0'); document.getElementById('seconds').innerText = s.toString().padStart(2, '0');
             };
             const interval = setInterval(countdown, 1000); countdown();
-            
-            // --- Matter.js Physics Engine Setup ---
-            const { Engine, Render, Runner, World, Bodies, Mouse, MouseConstraint } = Matter;
-            const engine = Engine.create({ gravity: { y: 0.2 } });
-            const runner = Runner.create();
-            let render;
 
-            const setupPhysics = () => {
-                const containerWidth = physicsContainer.clientWidth;
-                const containerHeight = physicsContainer.clientHeight;
+            const renderGallery = (images) => {
+                imageGallery.innerHTML = '';
+                images.forEach(img => {
+                    const div = document.createElement('div');
+                    div.className = "gallery-item";
+                    div.dataset.fileId = img.id;
+                    const imgElement = document.createElement('img');
+                    imgElement.src = img.thumbnailLink;
+                    imgElement.alt = img.name;
+                    div.appendChild(imgElement);
 
-                if (render) {
-                    Render.stop(render);
-                    render.canvas.remove();
-                }
-
-                render = Render.create({
-                    element: physicsContainer,
-                    engine: engine,
-                    options: {
-                        width: containerWidth,
-                        height: containerHeight,
-                        wireframes: false,
-                        background: 'transparent'
-                    }
+                    const overlay = document.createElement('div');
+                    overlay.className = 'item-overlay';
+                    overlay.innerHTML = `
+                        <div class="comment-btn overlay-btn" title="コメントを見る">
+                            <i data-feather="message-square" class="w-5 h-5 text-white pointer-events-none"></i>
+                        </div>
+                        <div class="delete-btn overlay-btn" title="削除">
+                             <i data-feather="trash-2" class="w-5 h-5 text-white pointer-events-none"></i>
+                        </div>
+                    `;
+                    
+                    div.appendChild(overlay);
+                    imageGallery.prepend(div);
                 });
-
-                World.clear(engine.world, true);
-                
-                const wallOptions = { isStatic: true, render: { visible: false } };
-                World.add(engine.world, [
-                    Bodies.rectangle(containerWidth / 2, containerHeight + 30, containerWidth, 60, wallOptions), // Floor
-                    Bodies.rectangle(containerWidth / 2, -30, containerWidth, 60, wallOptions), // Ceiling
-                    Bodies.rectangle(-30, containerHeight / 2, 60, containerHeight, wallOptions), // Left wall
-                    Bodies.rectangle(containerWidth + 30, containerHeight / 2, 60, containerHeight, wallOptions) // Right wall
-                ]);
-
-                Render.run(render);
-                Runner.run(runner, engine);
-
-                const mouse = Mouse.create(render.canvas);
-                const mouseConstraint = MouseConstraint.create(engine, {
-                    mouse: mouse,
-                    constraint: { stiffness: 0.2, render: { visible: false } }
-                });
-                World.add(engine.world, mouseConstraint);
-                render.mouse = mouse;
+                feather.replace();
             };
 
-            const addImageToPhysicsWorld = (imgUrl) => {
-                const img = new Image();
-                img.crossOrigin = "Anonymous";
-                img.onload = () => {
-                    const containerWidth = physicsContainer.clientWidth;
-                    const scale = 100 / img.width;
-                    const body = Bodies.rectangle(
-                        Math.random() * (containerWidth - 100) + 50,
-                        -50,
-                        img.width * scale,
-                        img.height * scale,
-                        {
-                            restitution: 0.6,
-                            render: {
-                                sprite: {
-                                    texture: img.src,
-                                    xScale: scale,
-                                    yScale: scale
-                                }
-                            }
-                        }
-                    );
-                    World.add(engine.world, body);
-                };
-                img.src = imgUrl;
-            };
-
-            // --- Gallery & Upload Logic ---
             const fetchAndDisplayImages = async () => {
-                 if (!isLiveEnvironment) {
-                    uploadStatus.textContent = 'プレビューモードでは物理アニメーションは無効です。';
-                    return;
-                 }
+                 if (!isLiveEnvironment) { uploadStatus.textContent = 'プレビューモードではギャラリーは表示されません。'; return; }
                  try {
                     uploadStatus.textContent = 'ギャラリーを読み込んでいます...';
                     const response = await fetch('/.netlify/functions/images');
                     if (!response.ok) { const errorData = await response.json().catch(() => ({ message: 'Failed to fetch images.' })); throw new Error(errorData.message); }
                     const images = await response.json();
-                    
-                    World.clear(engine.world, true); // Clear existing bodies
-                    setupPhysics(); // Re-setup walls
-                    images.forEach(img => {
-                       addImageToPhysicsWorld(img.thumbnailLink);
-                    });
+                    renderGallery(images);
                     uploadStatus.textContent = '';
                 } catch (error) { console.error('Error fetching images:', error); uploadStatus.textContent = `エラー: ${error.message}`; }
             };
 
             imageUploadInput.addEventListener('change', async (event) => {
                 const files = event.target.files; if (!files.length) return;
-                
                 if (!isLiveEnvironment) {
-                    uploadStatus.textContent = 'プレビューモードではアップロードできません。';
-                    return;
+                    for (const file of files) { if (!file.type.startsWith('image/')) continue; const reader = new FileReader(); reader.onload = (e) => {
+                            const div = document.createElement('div'); div.className = "gallery-item";
+                            const imgElement = document.createElement('img'); imgElement.src = e.target.result;
+                            div.appendChild(imgElement); imageGallery.prepend(div);
+                        }; reader.readAsDataURL(file);
+                    } return;
                 }
                 uploadStatus.textContent = 'アップロード中...'; const formData = new FormData();
                 for (const file of files) { formData.append('images', file); }
                 try {
                     const response = await fetch('/.netlify/functions/upload', { method: 'POST', body: formData });
                     if (!response.ok) { const errorData = await response.json().catch(() => ({ message: 'Upload failed.'})); throw new Error(errorData.message); }
-                    uploadStatus.textContent = 'アップロード完了！'; 
-                    await fetchAndDisplayImages();
+                    uploadStatus.textContent = 'アップロード完了！'; await fetchAndDisplayImages();
                 } catch (error) { console.error('Upload Error:', error); uploadStatus.textContent = `エラー: ${error.message}`; } finally { setTimeout(() => { if (uploadStatus.textContent.includes('アップロード')) uploadStatus.textContent = ''; }, 4000); }
                 imageUploadInput.value = '';
             });
 
-            setupPhysics();
+            imageGallery.addEventListener('click', e => {
+                const galleryItem = e.target.closest('.gallery-item'); if (!galleryItem) return;
+                const fileId = galleryItem.dataset.fileId;
+                if (e.target.closest('.delete-btn')) { e.preventDefault(); openDeleteConfirm(fileId, galleryItem); } 
+                else if (e.target.closest('.comment-btn')) { e.preventDefault(); displayCommentUI(fileId, galleryItem.querySelector('img').src); }
+            });
+            
+            const displayCommentUI = (fileId, imgSrc) => {
+                if (unsubscribeComments) unsubscribeComments();
+                currentFileId = fileId;
+                commentSection.innerHTML = `
+                    <div class="flex items-start gap-4 w-full">
+                        <img src="${imgSrc}" class="w-24 h-24 object-cover rounded-lg">
+                        <div class="flex-grow text-left">
+                            <h3 class="font-bold mb-2">コメント</h3>
+                            <div id="comment-list-inline" class="max-h-48 overflow-y-auto pr-2 mb-2"></div>
+                            <form id="comment-form-inline" class="flex gap-2">
+                                <input type="text" id="comment-input-inline" placeholder="コメントを追加..." class="flex-grow border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black">
+                                <button type="submit" class="bg-blue-500 text-white rounded-lg px-4 py-2 hover:bg-blue-600 transition-colors disabled:bg-gray-400"><i data-feather="send" class="w-5 h-5"></i></button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+                commentSection.classList.remove('hidden');
+                feather.replace();
+                commentSection.scrollIntoView({ behavior: 'smooth' });
+
+                const commentListInline = document.getElementById('comment-list-inline');
+                if (db && isFirebaseReady) {
+                    const appId = isLiveEnvironment ? APP_ID : (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
+                    const docRef = doc(db, `artifacts/${appId}/public/data/photos`, fileId);
+                    unsubscribeComments = onSnapshot(docRef, (docSnap) => {
+                        commentListInline.innerHTML = '';
+                        if (docSnap.exists() && docSnap.data().comments) {
+                            docSnap.data().comments.forEach(comment => {
+                                const commentEl = document.createElement('div');
+                                commentEl.className = 'bg-gray-100 rounded-lg p-3 mb-2 text-sm text-gray-800';
+                                commentEl.textContent = comment.text;
+                                commentListInline.appendChild(commentEl);
+                            });
+                        }
+                        if (commentListInline.innerHTML === '') { commentListInline.innerHTML = '<p class="text-gray-500 text-sm">まだコメントはありません。</p>'; }
+                    });
+                } else {
+                    commentListInline.innerHTML = '<p class="text-gray-500">コメント機能は現在利用できません。</p>';
+                }
+
+                document.getElementById('comment-form-inline').addEventListener('submit', async e => {
+                    e.preventDefault();
+                    const input = document.getElementById('comment-input-inline');
+                    const text = input.value.trim();
+                    if (!text || !currentFileId || !db) return;
+                    input.disabled = true;
+                    const appId = isLiveEnvironment ? APP_ID : (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
+                    const docRef = doc(db, `artifacts/${appId}/public/data/photos`, currentFileId);
+                    const newComment = { text: text, timestamp: new Date().toISOString() };
+                    try { await setDoc(docRef, { comments: arrayUnion(newComment) }, { merge: true }); input.value = ''; }
+                    catch (err) { console.error("Error adding comment: ", err); } finally { input.disabled = false; input.focus(); }
+                });
+            };
+
+            const openDeleteConfirm = (fileId, galleryItem) => {
+                deleteConfirmModal.classList.remove('hidden');
+                confirmDelete.onclick = () => handleDelete(fileId, galleryItem);
+            };
+            const closeDeleteConfirm = () => deleteConfirmModal.classList.add('hidden');
+            cancelDelete.addEventListener('click', closeDeleteConfirm);
+            const handleDelete = async (fileId, galleryItem) => {
+                if (!isLiveEnvironment) { return; }
+                uploadStatus.textContent = '削除中...';
+                closeDeleteConfirm();
+                try {
+                    const response = await fetch('/.netlify/functions/delete', { method: 'POST', body: JSON.stringify({ fileId }) });
+                    if (!response.ok) { const err = await response.json(); throw new Error(err.message); }
+                    galleryItem.remove();
+                    if(currentFileId === fileId) commentSection.classList.add('hidden');
+                    uploadStatus.textContent = '削除しました。';
+                } catch (err) { console.error('Delete error:', err); uploadStatus.textContent = `削除エラー: ${err.message}`; } finally { setTimeout(() => uploadStatus.textContent = '', 4000); }
+            };
+
             fetchAndDisplayImages();
-            window.addEventListener('resize', setupPhysics);
             feather.replace();
         });
     </script>
 </body>
 </html>
-```
-
-#### `📄 package.json`, `📄 delete.js`, `📄 images.js`, `📄 netlify.toml`, `📄 upload.js`
-（変更
